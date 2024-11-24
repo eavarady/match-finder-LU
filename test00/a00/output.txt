@@ -1,0 +1,1 @@
+t10 is UNION of t1 and t12
