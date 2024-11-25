@@ -34,9 +34,19 @@ public class MatchFinder implements IMatchFinder {
 					relZ = tables.get(k);
 
 					//Check that table Z is not the same as X or Y before starting to check
-                    if (relZ.equals(relX) == false && relZ.equals(relY) == false) {
+                    if (!relZ.equals(relX) && !relZ.equals(relY)) {
                         //Call  if cartesianCheck() == True and if unionCheck() == True
 						//Get number of rows and compare beforehand to filter out certain tables? Could improve performance
+
+						//Check for Union
+						if (unionCheck(relX, relX, relZ)) {
+							return relZ + " is UNION of " + relX + " and " + relZ;
+						}
+
+						//Check for Cartesian Product
+						if (cartesianCheck(relX, relX, relZ)) {
+							return relZ + " is CARTPROD of " + relX + " and " + relZ;
+						}
                     }
                 }
             }
@@ -44,11 +54,13 @@ public class MatchFinder implements IMatchFinder {
         return "NO MATCH";
     }
 	
-	private boolean unionCheck(String table1, String table2, String z) throws SQLException {
+	//PLACEHOLDER
+	private boolean unionCheck(String table1, String table2, String table3) throws SQLException {
 		return true;
 	}
-
-	private boolean cartesianCheck(String table1, String table2, String z) throws SQLException {
+	
+	//PLACEHOLDER
+	private boolean cartesianCheck(String table1, String table2, String table3) throws SQLException {
 		return true;
 	}
 
