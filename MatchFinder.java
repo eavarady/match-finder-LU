@@ -1,5 +1,5 @@
 import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.SQLException; // no additional java.sql imports allowed!
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -91,20 +91,45 @@ public class MatchFinder implements IMatchFinder {
 	}
 
 	//Generates a CREATE TABLE query to copy over relation X/Y from input.db to output.db
-	private String createTable(String table) throws SQLException {
+	private String createTable(String table, ResultSet rs) throws SQLException {
 
-		String query = "CREATE TABLE " + table + " AS SELECT * FROM " + table + ";";
+		//Start query and add table name
+		String query = "CREATE TABLE " + table + " ( ";
+		//Fetch number of columns in table for iteration
+		int columnCount = rs.getMetaData().getColumnCount();
+	
+		//Iterate through all the columns in the table
+		for (int i = 1; i <= columnCount; i++) {
+
+			//At each step in loop we fetch the current column's name and save it to a temporary variable
+			String columnName = rs.getMetaData().getColumnName(i);
+			//Then add current column name and integer type to query
+			query += columnName + " INTEGER ";
+			//Add a comma except at the last column
+			if (i < columnCount) {
+
+				query += ", ";
+			}
+		}
+		//Close the query and return the string
+		query += " );";
 		return query;
 	}
 
-	//Adds CREATE TABLE query (for relation X) to a list and returns it, to be passed to Writer class
+	//Adds CREATE TABLE and INSERT queries (for relation X) to a list and returns it, to be passed to Writer class
 	@Override
 	public List<String> commandsForRel1(){
-
+		//Declare empty list of commands
 		List<String> commands = new ArrayList<>();
 		try {
 
-			commands.add(createTable(relX));
+			//Get the result set for relation X to make sure it is still valid
+			rsX = q.getResultSet(relX);
+			//Build the CREATE TABLE query and add to list of commands
+			commands.add(createTable(relX, rsX));
+			//Build INSERT query, add to list
+			String insertQuery = "INSERT INTO " + relX + " SELECT * FROM " + relX + ";";
+			commands.add(insertQuery);
 
 		} catch (SQLException e) {
 
@@ -113,14 +138,20 @@ public class MatchFinder implements IMatchFinder {
 		return commands;
 	}
 
-	//Adds CREATE TABLE query (for relation Y) to a list and returns it, to be passed to Writer class
+	//Adds CREATE TABLE and INSERT queries (for relation Y) to a list and returns it, to be passed to Writer class
 	@Override
 	public List<String> commandsForRel2() {
-		
+		//Declare empty list of commands
 		List<String> commands = new ArrayList<>();
 		try {
 
-			commands.add(createTable(relY));
+			//Get the result set for relation Y to make sure it is still valid
+			rsY = q.getResultSet(relY);
+			//Build the CREATE TABLE query and add to list of commands
+			commands.add(createTable(relY, rsY));
+			//Build INSERT query, add to list
+			String insertQuery = "INSERT INTO " + relY + " SELECT * FROM " + relY + ";";
+			commands.add(insertQuery);
 
 		} catch (SQLException e) {
 

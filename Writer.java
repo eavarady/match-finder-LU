@@ -12,6 +12,7 @@ alongside the MatchFinder class to process and execute SQL commands, creating ne
 */
 public class Writer implements IWriter {
 	private Connection conn;
+
 	//Constructor, declares connection to the output database specified in the arguments
 	public Writer(String path) throws SQLException {
 
