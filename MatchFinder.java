@@ -1,12 +1,18 @@
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 
 public class MatchFinder implements IMatchFinder {
-	//Declare instance variables: Querier object, relation x/y/z and list of table names in database
+	//Declare instance variables: Querier object, relation x/y/z, result sets for x/y/z and list of table names in database
 	private Querier q;
 	private String relX, relY, relZ;
+	private ResultSet rsX;
+    private ResultSet rsY;
+    private ResultSet rsZ;
 	private List<String> tables;
 
 
@@ -33,19 +39,26 @@ public class MatchFinder implements IMatchFinder {
                     relY = tables.get(j);
 					relZ = tables.get(k);
 
-					//Check that table Z is not the same as X or Y before starting to check
+					//Check that table Z is not the same as X or Y before starting to check for UNION oand CARTPROD
                     if (!relZ.equals(relX) && !relZ.equals(relY)) {
-                        //Call  if cartesianCheck() == True and if unionCheck() == True
-						//Get number of rows and compare beforehand to filter out certain tables? Could improve performance
+						//
+						//TO DO:
+						//Get number of rows and compare beforehand to filter out certain tables? Could improve performance!!!!!
+						//
+
+						//Assign result sets to variables
+						rsX = q.getResultSet(relX);
+    					rsY = q.getResultSet(relY);
+    					rsZ = q.getResultSet(relZ);
 
 						//Check for Union
-						if (unionCheck(relX, relX, relZ)) {
-							return relZ + " is UNION of " + relX + " and " + relZ;
+						if (unionCheck()) {
+							return relZ + " is UNION of " + relX + " and " + relY;
 						}
 
 						//Check for Cartesian Product
 						if (cartesianCheck(relX, relX, relZ)) {
-							return relZ + " is CARTPROD of " + relX + " and " + relZ;
+							return relZ + " is CARTPROD of " + relX + " and " + relY;
 						}
                     }
                 }
@@ -54,14 +67,27 @@ public class MatchFinder implements IMatchFinder {
         return "NO MATCH";
     }
 	
-	//PLACEHOLDER
-	private boolean unionCheck(String table1, String table2, String table3) throws SQLException {
-		return true;
+	private boolean unionCheck() throws SQLException {
+
+		//Convert Result Sets into manageable Lists of Strings
+		List<String> rowsX = new ArrayList<>(rsToList(rsX));
+		List<String> rowsY = new ArrayList<>(rsToList(rsY));
+		List<String> rowsZ = new ArrayList<>(rsToList(rsZ));
+		//Create Sets to be compared, assign table Z's List of rows to its Set
+		Set<String> unionXY = new HashSet<>();
+        Set<String> setZ = new HashSet<>(rowsZ);
+
+		//Add all of the contents of tables X and Y to the Union set, naturally filtering out repeated rows due to the nature of a Set
+		unionXY.addAll(rowsX);
+        unionXY.addAll(rowsY);
+
+		//Return true if there is a match
+		return unionXY.equals(setZ);
 	}
 	
 	//PLACEHOLDER
-	private boolean cartesianCheck(String table1, String table2, String table3) throws SQLException {
-		return true;
+	private boolean cartesianCheck(String x, String y, String z) throws SQLException {
+		return false;
 	}
 
 	//Generates a CREATE TABLE query to copy over relation X/Y from input.db to output.db
@@ -102,5 +128,26 @@ public class MatchFinder implements IMatchFinder {
 		}
 		return commands;
 	}
+
+	//Helper method to convert Result Set rows into a List of Strings
+	private List<String> rsToList(ResultSet rs) throws SQLException {
+
+        List<String> rows = new ArrayList<>();
+        int columns = rs.getMetaData().getColumnCount();
+
+        while (rs.next()) {
+
+            String row = "";
+
+            for (int i = 1; i <= columns; i++) {
+
+                row += rs.getString(i);
+				row += "\t";
+
+            }
+            rows.add(row);
+        }
+        return rows;
+    }
 }
 
