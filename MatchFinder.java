@@ -67,6 +67,7 @@ public class MatchFinder implements IMatchFinder {
         return "NO MATCH";
     }
 	
+	//Builds union set from the rows of X and Y and checks against a set that contains all rows of Z
 	private boolean unionCheck() throws SQLException {
 
 		//Convert Result Sets into manageable Lists of Strings
@@ -163,19 +164,25 @@ public class MatchFinder implements IMatchFinder {
 	//Helper method to convert Result Set rows into a List of Strings
 	private List<String> rsToList(ResultSet rs) throws SQLException {
 
+		//Declare list of strings that will contain the rows
         List<String> rows = new ArrayList<>();
+		//Get and save number of columns to iterate inside the rows
         int columns = rs.getMetaData().getColumnCount();
 
+		//Iterates row per row in result set
         while (rs.next()) {
 
             String row = "";
 
+			//Iterates inside the current row
             for (int i = 1; i <= columns; i++) {
 
+				//Gets and saves column content, adds tab to separate from next column
                 row += rs.getString(i);
 				row += "\t";
 
             }
+			//Adds finished row to list of rows
             rows.add(row);
         }
         return rows;
