@@ -7,7 +7,7 @@ import java.util.Set;
 
 
 public class MatchFinder implements IMatchFinder {
-	//Declare instance variables: Querier object, relation x/y/z, result sets for x/y/z and list of table names in database
+	//Declare instance variables: Querier object, relation x/y/z, result sets, list of table names in database
 	private Querier q;
 	private String relX, relY, relZ;
 	private ResultSet rsX;
@@ -43,12 +43,13 @@ public class MatchFinder implements IMatchFinder {
                     relY = tables.get(j);
 					relZ = tables.get(k);
 
-					//Check that table Z is not the same as X or Y before starting to check for UNION oand CARTPROD
+					//Check that table Z is not the same as X or Y before starting to check for UNION and CARTPROD
                     if (!relZ.equals(relX) && !relZ.equals(relY)) {
-						//
-						//TO DO:
-						//Get number of rows and compare beforehand to filter out certain tables? Could improve performance!!!!!
-						//
+
+						//Get number of rows and compare to filter out certain tables to improve performance
+						if (earlyFilter()) {
+							continue;
+						}
 
 						//Assign result sets to variables
 						rsX = q.getResultSet(relX);
@@ -215,5 +216,32 @@ public class MatchFinder implements IMatchFinder {
         }
         return rows;
     }
+	//Parses number of rows from each table and calculates if it cannot be a match of any kind due to number of rows
+	private boolean earlyFilter() throws SQLException {
+
+		//Initialize variables to store row counts and result sets
+		int rowsX = 0, rowsY = 0, rowsZ = 0;
+		rsX = q.getResultSet(relX);
+		rsY = q.getResultSet(relY);
+		rsZ = q.getResultSet(relZ);
+
+		//Move all pointers to the end of the result set, counting on each step
+		while (rsX.next()) {
+		
+			rowsX++;
+		}
+		while (rsY.next()) {
+
+			rowsY++;
+		}
+		while (rsZ.next()) {
+
+			rowsZ++;
+		}
+		//Returns true if Z cannot possibly be a UNION or CARTPROD match
+		//UNION: Z cannot be bigger than number of rows in X + Y
+		//CARTPROD: Z has to be equal to rows in X * Y
+		return rowsZ != rowsX * rowsY && rowsZ > rowsX + rowsY;
+	}
 }
 
