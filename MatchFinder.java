@@ -28,12 +28,16 @@ public class MatchFinder implements IMatchFinder {
 	//Needs to check every possible combination, without any duplicates or unions/cc of itself of course
 	@Override
 	public String message() throws SQLException {
+
 		//Table X Iterator
         for (int i = 0; i < tables.size(); i++) {
+
 			//Table Y Iterator
-            for (int j = i + 1; j < tables.size(); j++) {
+            for (int j = 0; j < tables.size(); j++) {
+
 				//Table Z Iterator
                 for (int k = 0; k < tables.size(); k++) {
+
 					//Assign table names to instance variables
 					relX = tables.get(i);
                     relY = tables.get(j);
@@ -48,16 +52,21 @@ public class MatchFinder implements IMatchFinder {
 
 						//Assign result sets to variables
 						rsX = q.getResultSet(relX);
-    					rsY = q.getResultSet(relY);
-    					rsZ = q.getResultSet(relZ);
+						rsY = q.getResultSet(relY);
+						rsZ = q.getResultSet(relZ);
 
 						//Check for Union
 						if (unionCheck()) {
 							return relZ + " is UNION of " + relX + " and " + relY;
 						}
 
+						//Assign result sets to variables again to avoid IllegalStateException
+						rsX = q.getResultSet(relX);
+						rsY = q.getResultSet(relY);
+						rsZ = q.getResultSet(relZ);
+
 						//Check for Cartesian Product
-						if (cartesianCheck(relX, relX, relZ)) {
+						if (cartesianCheck()) {
 							return relZ + " is CARTPROD of " + relX + " and " + relY;
 						}
                     }
@@ -71,10 +80,10 @@ public class MatchFinder implements IMatchFinder {
 	private boolean unionCheck() throws SQLException {
 
 		//Convert Result Sets into manageable Lists of Strings
-		List<String> rowsX = new ArrayList<>(rsToList(rsX));
-		List<String> rowsY = new ArrayList<>(rsToList(rsY));
-		List<String> rowsZ = new ArrayList<>(rsToList(rsZ));
-		//Create Sets to be compared, assign table Z's List of rows to its Set
+		List<String> rowsX = rsToList(rsX);
+		List<String> rowsY = rsToList(rsY);
+		List<String> rowsZ = rsToList(rsZ);
+		//Initialize Sets to be compared, assign table Z's List of rows to its Set
 		Set<String> unionXY = new HashSet<>();
         Set<String> setZ = new HashSet<>(rowsZ);
 
@@ -86,9 +95,28 @@ public class MatchFinder implements IMatchFinder {
 		return unionXY.equals(setZ);
 	}
 	
-	//PLACEHOLDER
-	private boolean cartesianCheck(String x, String y, String z) throws SQLException {
-		return false;
+	//Builds cartesian product set from the rows of X and Y and checks against a set that contains all rows of Z
+	private boolean cartesianCheck() throws SQLException {
+		
+		//Convert Result Sets into manageable Lists of Strings
+		List<String> rowsX = rsToList(rsX);
+		List<String> rowsY = rsToList(rsY);
+		List<String> rowsZ = rsToList(rsZ);
+		
+		//Initialize Sets to be compared, assign table Z's List of rows to its Set
+		Set<String> zSet = new HashSet<>(rowsZ);
+		Set<String> cartesianSet = new HashSet<>();
+
+		//Iterate over all rows in table X
+		for (String rowX : rowsX) {
+			////Iterate over all rows in table Y
+			for (String rowY : rowsY) {
+				//Add every possible combination of rows, creating a Cartesian Product
+				cartesianSet.add(rowX + rowY);
+			}
+		}
+		//Return true if there is a match
+		return cartesianSet.equals(zSet);
 	}
 
 	//Generates a CREATE TABLE query to copy over relation X/Y from input.db to output.db
@@ -124,7 +152,7 @@ public class MatchFinder implements IMatchFinder {
 		List<String> commands = new ArrayList<>();
 		try {
 
-			//Get the result set for relation X to make sure it is still valid
+			//Get the result set for relation X to avoid IllegalStateException
 			rsX = q.getResultSet(relX);
 			//Build the CREATE TABLE query and add to list of commands
 			commands.add(createTable(relX, rsX));
@@ -146,7 +174,7 @@ public class MatchFinder implements IMatchFinder {
 		List<String> commands = new ArrayList<>();
 		try {
 
-			//Get the result set for relation Y to make sure it is still valid
+			//Get the result set for relation Y to make to avoid IllegalStateException
 			rsY = q.getResultSet(relY);
 			//Build the CREATE TABLE query and add to list of commands
 			commands.add(createTable(relY, rsY));
